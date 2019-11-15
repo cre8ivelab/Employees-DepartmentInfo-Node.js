@@ -53,8 +53,8 @@ const storage = multer.diskStorage({
     }
   });
   
-  // tell multer to use the diskStorage function for naming files instead of the default.
-  const upload = multer({ storage: storage });
+// tell multer to use the diskStorage function for naming files instead of the default.
+const upload = multer({ storage: storage });
 
 //to get the correct css from server
 app.use(express.static('public')); 
@@ -79,52 +79,47 @@ app.get("/about", function(req,res){
 
 //The route "/employees" will show the employees array containing the employees data with queries and without queries
 app.get("/employees", function(req,res){
+    var loadData;
     if(req.query.status)
-    {
-        data_service.getEmployeesByStatus(req.query.status)
-        .then((emp) => res.render('employees', {
-            data: emp
-        }))
-        .catch(() => res.render({message: "no results"}));
-    }
+        loadData = data_service.getEmployeesByStatus(req.query.status);
     else if(req.query.department)
-    {
-        data_service.getEmployeesByDepartment(req.query.department)
-        .then((emp) => res.render('employees', {
-            data: emp
-        }))
-        .catch(() => res.render({message: "no results"}));
-    }
+        loadData = data_service.getEmployeesByDepartment(req.query.department);
     else if(req.query.manager)
-    {
-        data_service.getEmployeesByManager(req.query.manager)
-        .then((emp) => res.render('employees', {
-            data: emp
-        }))
-        .catch(() => res.render({message: "no results"}));
-    }
+        loadData = data_service.getEmployeesByManager(req.query.manager);
     else
-    {
-        data_service.getAllEmployees()
-        .then((emp) => res.render('employees', {
-            data: emp
-        }))
-        .catch(() => res.render({message: "no results"}));
-    } 
+        loadData = data_service.getAllEmployees();
+
+    loadData.then((emp) => {
+        if(emp.length > 0)
+            res.render('employees', {data: emp});
+        else
+            res.render('employees', {message: "no results"});
+    })
+    .catch((err) => res.render({message: err}));
 });
 
 //The route "/departments" will show the departments array containing the departments data
 app.get("/departments", function(req,res){
     data_service.getDepartments()
-    .then((dept) => res.render("departments", {
-        data: dept 
-    }))
+    .then((dept) => {
+        if(dept.length > 0)
+            res.render("departments", {data: dept});
+        else
+            res.render("departments", {message: "no results"});  
+    })
     .catch(() => res.render({message: "no results"}));
 });
 
 //The route "/employees/add" will get the registration form for employees
 app.get("/employees/add", (req,res) => {
-    res.render('addEmployee');
+    data_service.getDepartments()
+    .then((dep) => res.render('addEmployee', {departments: dep}))
+    .catch(() => res.render('addEmployee', {departments: []}));
+});
+
+//The route "/departments/add" will get the registration form for departments
+app.get("/departments/add", (req,res) => {
+    res.render('addDepartment');
 });
 
 //The route "/images/add" will get the page to upload a image
@@ -143,7 +138,6 @@ app.get("/images", (req,res) => {
         res.render("images", {
             data: items
         });
-        // res.json({Images: items});
     });
 });
 
@@ -157,6 +151,13 @@ app.post("/employees/add", (req,res) => {
     .catch(() => res.render({message: "no results"})); 
 });
 
+//post method to add the new department from the add department form page.
+app.post("/departments/add", (req,res) => {
+    data_service.addDepartments(req.body)
+    .then(() => res.redirect("/departments"))
+    .catch(() => res.render({message: "no results"})); 
+});
+
 //post method to update the employee information
 app.post("/employee/update", (req, res) => {
     data_service.updateEmployee(req.body)
@@ -164,23 +165,90 @@ app.post("/employee/update", (req, res) => {
     .catch(() => res.render({message: "no results"}));
 });
 
+//post method to update the department information
+app.post("/department/update", (req, res) => {
+    data_service.updateDepartment(req.body)
+    .then(() => res.redirect("/departments"))
+    .catch(() => res.render({message: "no results"}));
+});
 
 //The route "/employee/:value" will shows the employee as per the parameter.
-app.get("/employees/:empname", (req, res) => {
+/* app.get("/employees/:empname", (req, res) => {
     data_service.getEmployeeByNum(req.params.empname)
     .then((emp) => res.render("employee", {
         employee: emp
     }))
     .catch((err) => res.send(err));
+});*/
+app.get("/employee/:empNum", (req, res) => {
+
+    // initialize an empty object to store the values
+    let viewData = {};
+
+    data_Service.getEmployeeByNum(req.params.empNum).then((data) => {
+        if (data) {
+            viewData.employee = data; //store employee data in the "viewData" object as "employee"
+        } else {
+            viewData.employee = null; // set employee to null if none were returned
+        }
+    }).catch(() => {
+        viewData.employee = null; // set employee to null if there was an error 
+    }).then(data_Service.getDepartments)
+    .then((data) => {
+        viewData.departments = data; // store department data in the "viewData" object as "departments"
+
+        // loop through viewData.departments and once we have found the departmentId that matches
+        // the employee's "department" value, add a "selected" property to the matching 
+        // viewData.departments object
+
+        for (let i = 0; i < viewData.departments.length; i++) {
+            if (viewData.departments[i].departmentId == viewData.employee.department) {
+                viewData.departments[i].selected = true;
+            }
+        }
+
+    }).catch(() => {
+        viewData.departments = []; // set departments to empty if there was an error
+    }).then(() => {
+        if (viewData.employee == null) { // if no employee - return an error
+            res.status(404).send("Employee Not Found");
+        } else {
+            res.render("employee", { viewData: viewData }); // render the "employee" view
+        }
+    });
+});
+
+
+//The route "/department/:value" will shows the department as per the parameter.
+app.get("/departments/:depname", (req, res) => {
+    data_service.getDepartmentById(req.params.depname)
+    .then((dep) => {
+        if(dep.length > 0)
+            res.render("department", {department: dep});
+        else
+            res.status(404).send("Department Not Found");
+    })
+    .catch(() => res.status(404).send("Department Not Found"));
+});
+
+//The route "/employees/delete/:empNum" will delete the employee as per the parameter.
+app.get("/employees/delete/:empNum", (req, res) => {
+    data_service.deleteEmployeeByNum(req.params.empNum)
+    .then(() => res.redirect('/employees'))
+    .catch(() => res.status(500).send("Unable to Remove Employee / Employee not found)"));
+});
+
+//The route "/department/delete/:depId" will delete the department as per the parameter.
+app.get("/departments/delete/:depId", (req, res) => {
+    data_service.deleteDepartmentById(req.params.depId)
+    .then(() => res.redirect('/departments'))
+    .catch(() => res.status(500).send("Unable to Remove Department / Department not found)"));
 });
 
 //The get request to error 404 page 
 app.get('*', (req,res) => {
     res.redirect('https://i.pinimg.com/originals/b2/b9/16/b2b916a908fb0ee0cce790841a54d394.png');
 });
-
-
-
 
 //setup htttp server to listen on HTTP_PORT
 data_service.intialize()
