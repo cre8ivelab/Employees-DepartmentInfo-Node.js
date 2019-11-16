@@ -1,15 +1,20 @@
 <div class="row">
     <div class="col-md-12">
-        <h2>{{department.departmentName}} - Department: {{department.departmentId}}</h2>
+        {{#unless depart}}
+          <div class="col-md-12 text-center">
+            <strong>{{message}}</strong>
+          </div>
+          {{/unless}}
+        <h2>{{depart.[0].departmentName}} - Department: {{depart.[0].departmentId}}</h2>
         <hr />
         <form method="post" action="/department/update">
-            <input type="hidden" name="departmentId" value="{{department.departmentId}}" />
+            <input type="hidden" name="departmentId" value="{{depart.[0].departmentId}}" />
 
             <div class="row">
                 <div class="col-md-12">
                     <div class="form-group">
                         <label for="departmentName">Department Name</label>
-                        <input class="form-control" id="firstName" name="departmentName" type="text" value="{{department.departmentName}}" />
+                        <input class="form-control" id="firstName" name="departmentName" type="text" value="{{depart.[0].departmentName}}" />
                     </div>
                 </div>
             </div>

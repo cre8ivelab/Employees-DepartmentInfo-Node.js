@@ -79,7 +79,21 @@ module.exports.addEmployee = function(employeeData){
         {
             //needs to complete
         }
-        Employee.create()   //needs attention
+        Employee.create({
+            firstName: employeeData.firstName,
+            lastName: employeeData.lastName,
+            email: employeeData.email,
+            SSN: employeeData.SSN,
+            addressStreet: employeeData.addressStreet,
+            addressCity: employeeData.addressCity,
+            addressState: employeeData.addressState,
+            addressPostal: employeeData.addressPostal,
+            maritalStatus: employeeData.maritalStatus,
+            isManager: employeeData.isManager,
+            employeeManagerNum: employeeData.employeeManagerNum,
+            status: employeeData.status,
+            hireDate: employeeData.hireDate
+        }) 
         .then((data) => resolve(data))
         .catch(() => reject("unable to create employee"));
     });
@@ -99,11 +113,11 @@ module.exports.getEmployeesByStatus = function(st){
 }
 
 //The getEmployeesByStatus return the employees whose "department" match with the "query string department" 
-module.exports.getEmployeesByDepartment = function(department){
+module.exports.getEmployeesByDepartment = function(id){
     return new Promise(function (resolve, reject) {
         Employee.findAll({
             where: {
-                departmentId : department
+                departmentId : id
             }
         })
         .then((data) => resolve(data))
@@ -132,7 +146,7 @@ module.exports.getEmployeeByNum = function(num){
                 employeeNum : num
             }
         })
-        .then((data) => resolve(data))
+        .then((data) => resolve(data[0]))
         .catch(() => reject("no results returned"));
     });
 }
@@ -140,21 +154,22 @@ module.exports.getEmployeeByNum = function(num){
 //The updateEmployee will update a employee data in our records
 module.exports.updateEmployee = function(employeeData){
     return new Promise(function (resolve, reject) {
-        employeeData.isManager = (employeeData.isManager) ? true : false;
-        for(var prop in employeeData)
+        for(var i in employeeData)
         {
-            //needs to complete
+            if(!employeeData[i])
+                employeeData[i] = null;
         }
-        Employee.update({   
+        employeeData.isManager = (employeeData.isManager) ? true : false;
+        Employee.update(employeeData, {   
             where: { employeeNum: employeeData.employeeNum}
         })
-        .then((data) => resolve(data))
+        .then(() => resolve())
         .catch(() => reject("unable to update employee"));
     });
 }
 
 //delete a employee
-modules.exports.deleteEmployeeByNum = (empNum) => {
+module.exports.deleteEmployeeByNum = (empNum) => {
     return new Promise((resolve,reject) => {
         Employee.destroy({
             where: {employeeNum: empNum}
@@ -180,11 +195,14 @@ module.exports.getDepartments = function(){
 //add departments
 module.exports.addDepartments = (departmentData) => {
     return new Promise((resolve, reject) => {
-        for(var prop in departmentData)
+        for(var i in departmentData)
         {
-
+            if (!departmentData[i])
+                departmentData[i] = null;
         }
-        Department.create()   //needs attention
+        Department.create({
+            departmentName: departmentData.departmentName
+        })   //needs attention
         .then((data) => resolve(data))
         .catch(() => reject("unable to create department"));
     });
@@ -193,14 +211,16 @@ module.exports.addDepartments = (departmentData) => {
 //update deaprtments
 module.exports.updateDepartment = (departmentData) => {
     return new Promise((resolve, reject) => {
-        for(var prop in departmentData)
+        for(var i in departmentData)
         {
-
+            if(!departmentData[i])
+                departmentData[i] = null;
         }
-        Department.update({   //needs attention
-            where: { departmentId: departmentData.departmentId}
+        Department.update({
+            departmentName: departmentData.departmentName},
+            {where: { departmentId: departmentData.departmentId}
         })   
-        .then((data) => resolve(data))
+        .then(() => resolve())
         .catch(() => reject("unable to update department"));
     });
 }
@@ -211,7 +231,7 @@ module.exports.getDepartmentById = (id) => {
         Department.findAll({
             where: {departmentId : id}
         })
-        .then(() => resolve("destroyed"))
+        .then(data => resolve(data))
         .catch(() => reject("department not found"));
     });
 }
@@ -222,7 +242,7 @@ module.exports.deleteDepartmentById = (id) => {
         Department.destroy({
             where: {departmentId: id}
         })
-        .then((data) => resolve(data))
+        .then(() => resolve())
         .catch(() => reject("department not found"));
     });
 }

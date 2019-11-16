@@ -95,7 +95,7 @@ app.get("/employees", function(req,res){
         else
             res.render('employees', {message: "no results"});
     })
-    .catch((err) => res.render({message: err}));
+    .catch((err) => res.render('employees',{message: err}));
 });
 
 //The route "/departments" will show the departments array containing the departments data
@@ -162,14 +162,14 @@ app.post("/departments/add", (req,res) => {
 app.post("/employee/update", (req, res) => {
     data_service.updateEmployee(req.body)
     .then(() => res.redirect("/employees"))
-    .catch(() => res.render({message: "no results"}));
+    .catch(() => res.render("employees",{message: "no results"}));
 });
 
 //post method to update the department information
 app.post("/department/update", (req, res) => {
     data_service.updateDepartment(req.body)
     .then(() => res.redirect("/departments"))
-    .catch(() => res.render({message: "no results"}));
+    .catch(() => res.render("departments",{message: "no results"}));
 });
 
 //The route "/employee/:value" will shows the employee as per the parameter.
@@ -180,12 +180,12 @@ app.post("/department/update", (req, res) => {
     }))
     .catch((err) => res.send(err));
 });*/
-app.get("/employee/:empNum", (req, res) => {
+app.get("/employees/:empNum", (req, res) => {
 
     // initialize an empty object to store the values
     let viewData = {};
 
-    data_Service.getEmployeeByNum(req.params.empNum).then((data) => {
+    data_service.getEmployeeByNum(req.params.empNum).then((data) => {
         if (data) {
             viewData.employee = data; //store employee data in the "viewData" object as "employee"
         } else {
@@ -193,7 +193,7 @@ app.get("/employee/:empNum", (req, res) => {
         }
     }).catch(() => {
         viewData.employee = null; // set employee to null if there was an error 
-    }).then(data_Service.getDepartments)
+    }).then(data_service.getDepartments)
     .then((data) => {
         viewData.departments = data; // store department data in the "viewData" object as "departments"
 
@@ -224,7 +224,7 @@ app.get("/departments/:depname", (req, res) => {
     data_service.getDepartmentById(req.params.depname)
     .then((dep) => {
         if(dep.length > 0)
-            res.render("department", {department: dep});
+            res.render("department", {depart: dep});
         else
             res.status(404).send("Department Not Found");
     })
