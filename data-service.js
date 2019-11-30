@@ -180,7 +180,7 @@ module.exports.deleteEmployeeByNum = (empNum) => {
 }
 
 /*-------------------------------------------------------------------
-                            EMPLOYEES
+                            Departments
 -------------------------------------------------------------------*/
 
 //getDepartments function returning the array of object departments

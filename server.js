@@ -1,19 +1,21 @@
 /*********************************************************************************
-*  WEB322 – Assignment 02
+*  WEB322 – Assignment 06
 *  I declare that this assignment is my own work in accordance with Seneca  Academic Policy.  No part *  of this assignment has been copied manually or electronically from any other source 
 *  (including 3rd party web sites) or distributed to other students.
 * 
-*  Name: Ranjit Prajapati Student ID: 154561179 Date: Oct. 31, 2019
+*  Name: Ranjit Prajapati Student ID: 154561179 Date: Nov. 29, 2019
 *
-*  Online (Heroku) Link: https://pure-falls-04653.herokuapp.com/
+*  Online (Heroku) Link: https://murmuring-fortress-87365.herokuapp.com/
 *
 ********************************************************************************/ 
-const data_service = require("./data-service.js") //using module data-service.js
+const data_service = require("./data-service.js"); //using module data-service.js
+const data_service_auth = require("./data-service-auth.js");   //using module data-service-auth.js
 const express = require("express");   //using module express
 const multer = require("multer");   //using multer module to deal with form-files
 const fs = require("fs");   //using fs module to deal with filestream objects
 const exhbs = require("express-handlebars");    //using handlebars module 
 const bodyParser = require("body-parser");  //using body-parser module
+const clientSessions = require("client-sessions");  //using client-sessions module
 const HTTP_PORT = process.env.PORT || 8080;   //server will listen on port 8080
 const app = express();  
 const path = require("path");     //storing the current path in the varaible "path"
@@ -59,6 +61,29 @@ const upload = multer({ storage: storage });
 //to get the correct css from server
 app.use(express.static('public')); 
 
+//Middleware function to setup client-sessions
+app.use(clientSessions({
+    cookieName: "session", // this is the object name that will be added to 'req'
+    secret: "web322_myApplication", // this should be a long un-guessable string.
+    duration: 2 * 60 * 1000, // duration of the session in milliseconds (2 minutes)
+    activeDuration: 1000 * 60 // the session will be extended by this many ms each request (1 minute)
+}));
+
+//custom middleware function  to give templates access to session
+app.use(function(req, res, next) {
+    res.locals.session = req.session;
+    next();
+});
+
+//ensureLogin Middleware
+function ensureLogin(req, res, next) {
+    if (!req.session.user) {
+      res.redirect("/login");
+    } else {
+      next();
+    }
+}
+
 //Middleware to show active menus
 app.use(function(req,res,next){
     let route = req.baseUrl + req.path;
@@ -78,7 +103,7 @@ app.get("/about", function(req,res){
 });
 
 //The route "/employees" will show the employees array containing the employees data with queries and without queries
-app.get("/employees", function(req,res){
+app.get("/employees", ensureLogin, function(req,res){
     var loadData;
     if(req.query.status)
         loadData = data_service.getEmployeesByStatus(req.query.status);
@@ -99,7 +124,7 @@ app.get("/employees", function(req,res){
 });
 
 //The route "/departments" will show the departments array containing the departments data
-app.get("/departments", function(req,res){
+app.get("/departments", ensureLogin, function(req,res){
     data_service.getDepartments()
     .then((dept) => {
         if(dept.length > 0)
@@ -111,29 +136,29 @@ app.get("/departments", function(req,res){
 });
 
 //The route "/employees/add" will get the registration form for employees
-app.get("/employees/add", (req,res) => {
+app.get("/employees/add", ensureLogin, (req,res) => {
     data_service.getDepartments()
     .then((dep) => res.render('addEmployee', {departments: dep}))
     .catch(() => res.render('addEmployee', {departments: []}));
 });
 
 //The route "/departments/add" will get the registration form for departments
-app.get("/departments/add", (req,res) => {
+app.get("/departments/add", ensureLogin, (req,res) => {
     res.render('addDepartment');
 });
 
 //The route "/images/add" will get the page to upload a image
-app.get("/images/add", (req,res) => {
+app.get("/images/add", ensureLogin, (req,res) => {
     res.render('addImage');
 });
 
 //The post request to the "/images" route.
-app.post("/images/add", upload.single("imageFile"), (req,res) => {
+app.post("/images/add", ensureLogin, upload.single("imageFile"), (req,res) => {
     res.redirect("/images");
 });
 
 //The get request of images posted by "/images/add" route
-app.get("/images", (req,res) => {
+app.get("/images", ensureLogin, (req,res) => {
     fs.readdir("./public/images/uploaded", (err, items) => {
         res.render("images", {
             data: items
@@ -145,42 +170,35 @@ app.get("/images", (req,res) => {
 app.use(bodyParser.urlencoded({ extended: true }));
 
 //post method to add the new employee from the add employee form page.
-app.post("/employees/add", (req,res) => {
+app.post("/employees/add", ensureLogin, (req,res) => {
     data_service.addEmployee(req.body)
     .then(() => res.redirect("/employees"))
     .catch(() => res.render({message: "no results"})); 
 });
 
 //post method to add the new department from the add department form page.
-app.post("/departments/add", (req,res) => {
+app.post("/departments/add", ensureLogin, (req,res) => {
     data_service.addDepartments(req.body)
     .then(() => res.redirect("/departments"))
     .catch(() => res.render({message: "no results"})); 
 });
 
 //post method to update the employee information
-app.post("/employee/update", (req, res) => {
+app.post("/employee/update", ensureLogin, (req, res) => {
     data_service.updateEmployee(req.body)
     .then(() => res.redirect("/employees"))
     .catch(() => res.render("employees",{message: "no results"}));
 });
 
 //post method to update the department information
-app.post("/department/update", (req, res) => {
+app.post("/department/update", ensureLogin, (req, res) => {
     data_service.updateDepartment(req.body)
     .then(() => res.redirect("/departments"))
     .catch(() => res.render("departments",{message: "no results"}));
 });
 
 //The route "/employee/:value" will shows the employee as per the parameter.
-/* app.get("/employees/:empname", (req, res) => {
-    data_service.getEmployeeByNum(req.params.empname)
-    .then((emp) => res.render("employee", {
-        employee: emp
-    }))
-    .catch((err) => res.send(err));
-});*/
-app.get("/employees/:empNum", (req, res) => {
+app.get("/employees/:empNum", ensureLogin, (req, res) => {
 
     // initialize an empty object to store the values
     let viewData = {};
@@ -220,7 +238,7 @@ app.get("/employees/:empNum", (req, res) => {
 
 
 //The route "/department/:value" will shows the department as per the parameter.
-app.get("/departments/:depname", (req, res) => {
+app.get("/departments/:depname", ensureLogin, (req, res) => {
     data_service.getDepartmentById(req.params.depname)
     .then((dep) => {
         if(dep.length > 0)
@@ -232,17 +250,60 @@ app.get("/departments/:depname", (req, res) => {
 });
 
 //The route "/employees/delete/:empNum" will delete the employee as per the parameter.
-app.get("/employees/delete/:empNum", (req, res) => {
+app.get("/employees/delete/:empNum", ensureLogin, (req, res) => {
     data_service.deleteEmployeeByNum(req.params.empNum)
     .then(() => res.redirect('/employees'))
     .catch(() => res.status(500).send("Unable to Remove Employee / Employee not found)"));
 });
 
 //The route "/department/delete/:depId" will delete the department as per the parameter.
-app.get("/departments/delete/:depId", (req, res) => {
+app.get("/departments/delete/:depId", ensureLogin, (req, res) => {
     data_service.deleteDepartmentById(req.params.depId)
     .then(() => res.redirect('/departments'))
     .catch(() => res.status(500).send("Unable to Remove Department / Department not found)"));
+});
+
+//login route /get
+app.get("/login", (req, res) => {
+    res.render('login');
+});
+
+//register route /get
+app.get("/register", (req, res) => {
+    res.render('register');
+});
+
+//register route /post
+app.post("/register", (req, res) => {
+    data_service_auth.registerUser(req.body)
+    .then(() => res.render('register', {successMessage: "User created"}))
+    .catch((err) => res.render('register', {errorMessage: err, userName: req.body.userName}));
+});
+
+//login route /post
+app.post("/login", (req, res) => {
+    req.body.userAgent = req.get('User-Agent');
+    data_service_auth.checkUser(req.body)
+    .then((user) => {
+        req.session.user = {
+            userName: user.userName,
+            email: user.email,
+            loginHistory: user.loginHistory
+        }
+        res.redirect('/employees');
+    })
+    .catch((err) => res.render('login', {errorMessage: err, userName: req.body.userName}));
+});
+
+//logout route /get
+app.get("/logout", (req, res) => {
+    req.session.reset();
+    res.redirect("/");
+});
+
+//userHistory route /get
+app.get('/userHistory', ensureLogin, (req, res) => {
+    res.render('userHistory');
 });
 
 //The get request to error 404 page 
@@ -252,5 +313,6 @@ app.get('*', (req,res) => {
 
 //setup htttp server to listen on HTTP_PORT
 data_service.intialize()
-.then(() => {app.listen(HTTP_PORT, onHttpStart);})
-.catch((err) => {console.log(err)});
+.then(data_service_auth.intialize)
+.then(() => app.listen(HTTP_PORT, onHttpStart))
+.catch((err) => console.log("Unable to start server: " + err));
