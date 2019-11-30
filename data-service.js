@@ -117,7 +117,7 @@ module.exports.getEmployeesByDepartment = function(id){
     return new Promise(function (resolve, reject) {
         Employee.findAll({
             where: {
-                departmentId : id
+                department : id
             }
         })
         .then((data) => resolve(data))
