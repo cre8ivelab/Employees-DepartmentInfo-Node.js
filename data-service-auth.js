@@ -66,14 +66,18 @@ module.exports.checkUser = (userData) => {
         .then((user) => {
             bcrypt.compare(userData.password, user[0].password)
             .then((res) => {
-                user[0].loginHistory.push({dateTime: (new Date()).toString(), userAgent: userData.userAgent});  //update loginHistory
-                //update User object with user[0] data
-                User.update({userName: user[0].userName},
-                { $set: { loginHistory: user[0].loginHistory} },
-                {multi: false})
-                .exec()
-                .then(() => resolve(user[0]))
-                .catch((err) => reject("There was an error verifying the user: " + err));
+                if(res === true){
+                    user[0].loginHistory.push({dateTime: (new Date()).toString(), userAgent: userData.userAgent});  //update loginHistory
+                    //update User object with user[0] data
+                    User.update({userName: user[0].userName},
+                    { $set: { loginHistory: user[0].loginHistory} },
+                    {multi: false})
+                    .exec()
+                    .then(() => resolve(user[0]))
+                    .catch((err) => reject("There was an error verifying the user: " + err));
+                }
+                else
+                    reject("Incorrect Password for user: " + userData.userName);
             })
             .catch((err) => reject("Incorrect Password for user: " + userData.userName));   
         })
