@@ -1,13 +1,3 @@
-/*********************************************************************************
-*  WEB322 – Assignment 06
-*  I declare that this assignment is my own work in accordance with Seneca  Academic Policy.  No part *  of this assignment has been copied manually or electronically from any other source 
-*  (including 3rd party web sites) or distributed to other students.
-* 
-*  Name: Ranjit Prajapati Student ID: 154561179 Date: Nov. 29, 2019
-*
-*  Online (Heroku) Link: https://murmuring-fortress-87365.herokuapp.com/
-*
-********************************************************************************/ 
 const data_service = require("./data-service.js"); //using module data-service.js
 const data_service_auth = require("./data-service-auth.js");   //using module data-service-auth.js
 const express = require("express");   //using module express
