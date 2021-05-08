@@ -18,7 +18,7 @@ let User; // to be defined on new connection
 //intialize function to connect MongoDB before we start the application
 module.exports.intialize = function(){
     return new Promise((resolve, reject) => {
-        let db = mongoose.createConnection("mongodb+srv://cre8ivelab:shield@cluster0-2nr3d.mongodb.net/web322?retryWrites=true&w=majority");
+        let db = mongoose.createConnection("your database connection URI");
         db.on('error', (err)=>{
         reject(err); // reject the promise with the provided error
         });
